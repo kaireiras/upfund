@@ -1,0 +1,139 @@
+openapi: 3.0.3
+info:
+  title: Upfund Landing Page API
+  description: API Agregator untuk Landing Page Upfund (BFF Pattern).
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:8000/api
+    description: Development server
+
+paths:
+  /landing-page:
+    get:
+      summary: Mendapatkan data agregat untuk Landing Page
+      description: Mengambil data proyek unggulan (top projects), proyek per kategori, dan proyek hangat (hot projects) dalam satu request.
+      responses:
+        '200':
+          description: Data berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LandingPageResponse'
+
+components:
+  schemas:
+    LandingPageResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Landing page data fetched successfully
+        data:
+          type: object
+          properties:
+            top_projects:
+              type: array
+              items:
+                $ref: '#/components/schemas/Project'
+            category_projects:
+              type: array
+              items:
+                $ref: '#/components/schemas/CategoryProjects'
+            hot_projects:
+              type: array
+              items:
+                $ref: '#/components/schemas/HotProject'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [user, investor, creator]
+        date:
+          type: string
+          format: date-time
+        is_verified:
+          type: boolean
+
+    ProjectImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        image_url:
+          type: string
+          format: uri
+        project_id:
+          type: integer
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        video_url:
+          type: string
+          format: uri
+          nullable: true
+        valuation:
+          type: integer
+        collected_funds:
+          type: integer
+        investment_url:
+          type: string
+          format: uri
+          nullable: true
+        user:
+          $ref: '#/components/schemas/User'
+        project_images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectImage'
+
+    HotProject:
+      allOf:
+        - $ref: '#/components/schemas/Project'
+        - type: object
+          properties:
+            comments_count:
+              type: integer
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+
+    CategoryProjects:
+      allOf:
+        - $ref: '#/components/schemas/Category'
+        - type: object
+          properties:
+            projects:
+              type: array
+              items:
+                $ref: '#/components/schemas/Project'

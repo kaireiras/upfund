@@ -47,6 +47,11 @@ class Project extends Model
     {
         return $this->hasMany(Milestone::class);
     }
+    
+    public function projectImages()
+    {
+        return $this->hasMany(ProjectImage::class);
+    }
 
     public function shareholders(): HasMany
     {

@@ -15,8 +15,13 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
+        'bio',
+        'avatar_url',
+        'bank_account_details',
+        'role'
     ];
 
     protected $hidden = [
@@ -30,5 +35,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
         ];
+    }
+
+    public function kyc()
+    {
+        return $this->hasOne(Kyc::class);
+    }
+
+    // Helper untuk mengecek apakah user sudah terverifikasi
+    public function isKycVerified(): bool
+    {
+        return $this->kyc && $this->kyc->status === 'approved';
     }
 }

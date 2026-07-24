@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('valuation');
             $table->integer('collected_funds');
             $table->string('investment_url', 1024)->nullable();
+            $table->timestamps();
         });
     }
 

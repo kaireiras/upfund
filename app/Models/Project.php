@@ -77,4 +77,14 @@ class Project extends Model
     {
         return $this->morphMany(Comment::class, 'target');
     }
+
+    public function postsPreview(): HasMany
+    {
+        return $this->hasMany(Post::class, 'project_url', 'id')->latest('date')->limit(5);
+    }
+
+    public function commentsPreview(): MorphMany
+    {
+        return $this->morphMany(Comment::class, 'target')->latest('date')->limit(5);
+    }
 }

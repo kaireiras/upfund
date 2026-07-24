@@ -57,6 +57,119 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /projects/{id}:
+    get:
+      summary: Mendapatkan detail sebuah proyek
+      description: >
+        Mengambil detail lengkap satu proyek beserta relasi (owner, categories,
+        images, status_timeline, milestones, shareholders, public_events),
+        agregat interaksi (likes_count, shares_count, investors_count), serta
+        ringkasan posts & comments (total + preview).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID proyek.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail proyek berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetailResponse'
+        '404':
+          description: Proyek tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Gagal mengambil detail proyek
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /projects/{id}/comments:
+    get:
+      summary: Mendapatkan daftar komentar sebuah proyek (berpaginasi)
+      description: Mengambil komentar proyek berpaginasi (15 item per halaman), diurutkan dari yang terbaru.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID proyek.
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: false
+          description: Nomor halaman (mulai dari 1). Default 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Daftar komentar berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentsListResponse'
+        '404':
+          description: Proyek tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Gagal mengambil komentar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /projects/{id}/posts:
+    get:
+      summary: Mendapatkan daftar posts sebuah proyek (berpaginasi)
+      description: Mengambil posts proyek berpaginasi (15 item per halaman), diurutkan dari yang terbaru.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID proyek.
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: false
+          description: Nomor halaman (mulai dari 1). Default 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Daftar posts berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostsListResponse'
+        '404':
+          description: Proyek tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Gagal mengambil posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     LandingPageResponse:
@@ -298,3 +411,236 @@ components:
         error:
           type: string
           description: Detail teknis error (sebaiknya disembunyikan di production).
+
+    # ----------------------------------------------------------------------
+    # Schema khusus Project Detail (GET /projects/{id}) beserta sub-resource,
+    # serta daftar comments & posts (berpaginasi).
+    #
+    # Semua kolom tanggal (date/from/to) berupa string ISO-8601 karena
+    # Resource menstringkan Carbon via ->toISOString() (lihat CLAUDE.md).
+    # Objek user memakai representasi ringkas (ProjectListUser).
+    # ----------------------------------------------------------------------
+
+    ProjectDetailResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Project retrieved successfully
+        data:
+          $ref: '#/components/schemas/ProjectDetail'
+
+    ProjectDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        video_url:
+          type: string
+          format: uri
+          nullable: true
+        valuation:
+          type: integer
+        collected_funds:
+          type: integer
+        investment_url:
+          type: string
+          format: uri
+          nullable: true
+        likes_count:
+          type: integer
+          example: 0
+        shares_count:
+          type: integer
+          example: 0
+        investors_count:
+          type: integer
+          example: 0
+        owner:
+          $ref: '#/components/schemas/ProjectListUser'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectCategory'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectImage'
+        status_timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/Timeline'
+        milestones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Milestone'
+        shareholders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shareholder'
+        public_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicEvent'
+        posts:
+          $ref: '#/components/schemas/PostsSummary'
+        comments:
+          $ref: '#/components/schemas/CommentsSummary'
+
+    Timeline:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        timeline:
+          type: string
+        date:
+          type: string
+          format: date-time
+
+    Milestone:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        from:
+          type: string
+          format: date-time
+          nullable: true
+        to:
+          type: string
+          format: date-time
+          nullable: true
+        budget:
+          type: integer
+
+    Shareholder:
+      type: object
+      properties:
+        name:
+          type: string
+        share:
+          type: integer
+
+    PublicEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+          format: uri
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date-time
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+        description:
+          type: string
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+        date:
+          type: string
+          format: date-time
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        comment:
+          type: string
+        date:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/ProjectListUser'
+
+    PostsSummary:
+      type: object
+      description: Ringkasan posts pada detail proyek (total + preview).
+      properties:
+        total:
+          type: integer
+          example: 0
+        preview:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+
+    CommentsSummary:
+      type: object
+      description: Ringkasan comments pada detail proyek (total + preview).
+      properties:
+        total:
+          type: integer
+          example: 0
+        preview:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+
+    CommentsListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Comments retrieved successfully
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    PostsListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Posts retrieved successfully
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'

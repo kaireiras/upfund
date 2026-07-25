@@ -9,11 +9,23 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('username')->nullable()->unique()->after('name');
-            $table->text('bio')->nullable()->after('email');
-            $table->string('avatar_url', 1024)->nullable()->after('bio');
-            $table->string('bank_account_details')->nullable()->after('avatar_url'); // Contoh: "Bank BCA - 1228499201"
-            $table->string('role')->default('User')->after('bank_account_details');
+            // username & role sudah ada di migration create_users_table (branch ProjectDetails),
+            // jadi hanya tambahkan kolom profil yang benar-benar baru dari branch userprofile.
+            if (!Schema::hasColumn('users', 'username')) {
+                $table->string('username')->nullable()->unique()->after('name');
+            }
+            if (!Schema::hasColumn('users', 'bio')) {
+                $table->text('bio')->nullable()->after('email');
+            }
+            if (!Schema::hasColumn('users', 'avatar_url')) {
+                $table->string('avatar_url', 1024)->nullable()->after('bio');
+            }
+            if (!Schema::hasColumn('users', 'bank_account_details')) {
+                $table->string('bank_account_details')->nullable()->after('avatar_url');
+            }
+            if (!Schema::hasColumn('users', 'role')) {
+                $table->string('role')->default('User')->after('bank_account_details');
+            }
         });
     }
 

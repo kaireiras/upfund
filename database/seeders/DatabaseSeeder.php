@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CategoryAndProjectSeeder::class,
             LandingPageSeeder::class,
+            EndpointTestSeeder::class,
         ]);
     }
 }

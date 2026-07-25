@@ -1,0 +1,276 @@
+{
+  "info": {
+    "name": "Upfund API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000/api" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.access_token) {",
+                  "    pm.collectionVariables.set('token', res.access_token);",
+                  "    console.log('Token saved:', res.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rakai@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Landing Page",
+      "item": [
+        {
+          "name": "Get Landing Page Data",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/landing-page", "host": ["{{base_url}}"], "path": ["landing-page"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Get Projects List",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/projects?page=1",
+              "host": ["{{base_url}}"],
+              "path": ["projects"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "category", "value": "Teknologi", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Project Detail",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/projects/1", "host": ["{{base_url}}"], "path": ["projects", "1"] }
+          }
+        },
+        {
+          "name": "Get Project Comments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/projects/1/comments?page=1",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "1", "comments"],
+              "query": [{ "key": "page", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Get Project Posts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/projects/1/posts?page=1",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "1", "posts"],
+              "query": [{ "key": "page", "value": "1" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "Get Posts Feed",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/posts?page=1",
+              "host": ["{{base_url}}"],
+              "path": ["posts"],
+              "query": [{ "key": "page", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Get Post Detail",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/posts/1", "host": ["{{base_url}}"], "path": ["posts", "1"] }
+          }
+        },
+        {
+          "name": "Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/posts", "host": ["{{base_url}}"], "path": ["posts"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Update terbaru project EcoLoop!\",\n  \"image_url\": null,\n  \"project_url\": null,\n  \"category_titles\": [\"iot\", \"green tech\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Toggle Like",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/interactions/like", "host": ["{{base_url}}"], "path": ["interactions", "like"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_id\": 1,\n  \"target_type\": \"post\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "Get Comments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/comments?target_id=1&target_type=post",
+              "host": ["{{base_url}}"],
+              "path": ["comments"],
+              "query": [
+                { "key": "target_id", "value": "1" },
+                { "key": "target_type", "value": "post" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/comments", "host": ["{{base_url}}"], "path": ["comments"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_id\": 1,\n  \"target_type\": \"post\",\n  \"comment\": \"Komentar keren!\",\n  \"project_url\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/comments/1", "host": ["{{base_url}}"], "path": ["comments", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/profile", "host": ["{{base_url}}"], "path": ["profile"] }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/profile", "host": ["{{base_url}}"], "path": ["profile"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rakai\",\n  \"username\": \"rakai123\",\n  \"email\": \"rakai@example.com\",\n  \"bio\": \"Developer & Investor\",\n  \"avatar_url\": null,\n  \"bank_account_details\": null\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "KYC",
+      "item": [
+        {
+          "name": "Get KYC Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/kyc/status", "host": ["{{base_url}}"], "path": ["kyc", "status"] }
+          }
+        },
+        {
+          "name": "Submit KYC",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/kyc", "host": ["{{base_url}}"], "path": ["kyc"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "company_document", "type": "file", "src": "" },
+                { "key": "bank_document", "type": "file", "src": "" },
+                { "key": "address", "value": "Jl. Contoh No. 1, Jakarta", "type": "text" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Verify KYC",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/admin/kyc/1/verify", "host": ["{{base_url}}"], "path": ["admin", "kyc", "1", "verify"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"rejection_reason\": null\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

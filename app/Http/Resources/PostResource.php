@@ -36,3 +36,5 @@ class PostResource extends JsonResource
                 ]);
             }),
         ];
+    }
+}

@@ -18,3 +18,5 @@ class CommentResource extends JsonResource
             'project_url' => $this->project_url,
             'user'        => $this->whenLoaded('user', fn ($u) => (new UserResource($u))->resolve()),
         ];
+    }
+}

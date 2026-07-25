@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Interaction extends Model
 {
-    protected $table = 'interaction'; // Singular di database
+    protected $table = 'interaction';
     public $timestamps = false;
-    protected $guarded = ['id'];
+
+    protected $fillable = ['target_id', 'target_type', 'like', 'share', 'not_interested', 'user_id'];
 
     protected $casts = [
         'date' => 'datetime',
@@ -18,7 +19,6 @@ class Interaction extends Model
         'not_interested' => 'boolean',
     ];
 
-    // Polymorphic target (bisa Project atau Post)
     public function target(): MorphTo
     {
         return $this->morphTo(__FUNCTION__, 'target_type', 'target_id');

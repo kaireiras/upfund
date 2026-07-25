@@ -2,22 +2,40 @@
 
 namespace App\Models;
 
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
+    use HasApiTokens, HasFactory, Notifiable;
+
     public $timestamps = false;
-    protected $guarded = ['id'];
+
+    protected $fillable = [
+        'name',
+        'username',
+        'email',
+        'password',
+        'bio',
+        'avatar_url',
+        'bank_account_details',
+        'role',
+    ];
 
     protected $hidden = [
         'password',
+        'remember_token',
     ];
 
     protected $casts = [
         'date' => 'datetime',
         'is_verified' => 'boolean',
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
     ];
 
     public function kyc(): HasOne
@@ -48,5 +66,10 @@ class User extends Authenticatable
     public function investmentHistories(): HasMany
     {
         return $this->hasMany(InvestmentHistory::class);
+    }
+
+    public function isKycVerified(): bool
+    {
+        return $this->kyc && $this->kyc->status === 'approved';
     }
 }

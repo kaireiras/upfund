@@ -18,4 +18,4 @@ class PublicEvent extends Model
     {
         return $this->belongsTo(Project::class);
     }
-}   
+}

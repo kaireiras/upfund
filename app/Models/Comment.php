@@ -9,7 +9,15 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Comment extends Model
 {
     public $timestamps = false;
-    protected $guarded = ['id'];
+
+    protected $fillable = [
+        'target_id',
+        'target_type',
+        'comment',
+        'user_id',
+        'project_url',
+        'date',
+    ];
 
     protected $casts = [
         'date' => 'datetime',
@@ -21,6 +29,7 @@ class Comment extends Model
         return $this->morphTo(__FUNCTION__, 'target_type', 'target_id');
     }
 
+    // Relasi ke User pembuat komentar
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

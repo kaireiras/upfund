@@ -35,6 +35,7 @@ Route::get('/posts', [PostController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/interactions/like', [PostController::class, 'toggleLike']);
     Route::post('/comments', [CommentController::class, 'store']);
+    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
     Route::post('/posts', [PostController::class, 'store']);
 
     Route::post('/kyc', [KycController::class, 'store']);

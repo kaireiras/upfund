@@ -5,7 +5,11 @@
   },
   "variable": [
     { "key": "base_url", "value": "http://127.0.0.1:8000/api" },
-    { "key": "token", "value": "" }
+    { "key": "token", "value": "" },
+    { "key": "test_email", "value": "test@upfund.com" },
+    { "key": "test_password", "value": "password" },
+    { "key": "creator_email", "value": "creator@upfund.com" },
+    { "key": "creator_password", "value": "password" }
   ],
   "item": [
     {
@@ -34,7 +38,7 @@
             "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"rakai@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
             }
           }
         }
@@ -222,7 +226,7 @@
             "url": { "raw": "{{base_url}}/profile", "host": ["{{base_url}}"], "path": ["profile"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Rakai\",\n  \"username\": \"rakai123\",\n  \"email\": \"rakai@example.com\",\n  \"bio\": \"Developer & Investor\",\n  \"avatar_url\": null,\n  \"bank_account_details\": null\n}"
+              "raw": "{\n  \"name\": \"Test User\",\n  \"username\": \"testuser\",\n  \"email\": \"test@upfund.com\",\n  \"bio\": \"Investor di Upfund\",\n  \"avatar_url\": null,\n  \"bank_account_details\": \"Bank BCA - 1234567890\"\n}"
             }
           }
         }

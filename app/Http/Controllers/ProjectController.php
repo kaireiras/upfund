@@ -1,48 +1,34 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreProjectRequest;
+use App\Http\Resources\ProjectResource;
+use App\Models\Project;
+use Illuminate\Http\JsonResponse;
 
 class ProjectController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function store(StoreProjectRequest $request): JsonResponse
     {
-        //
-    }
+        // 1. Ambil data tervalidasi & masukkan user_id pembuat (dari token auth)
+        $data = $request->validated();
+        $data['user_id'] = $request->user()->id;
+        $data['collected_funds'] = 0; // Set default awal 0
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        // 2. Buat Project baru
+        $project = Project::create($data);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        // 3. Attach relasi kategori jika ada
+        if ($request->has('category_ids')) {
+            $project->categories()->sync($request->category_ids);
+        }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        // 4. Return JsonResponse menggunakan ProjectResource
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Project created successfully',
+            'data'    => new ProjectResource($project->load(['user', 'categories']))
+        ], 201);
     }
 }
+

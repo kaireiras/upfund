@@ -33,17 +33,9 @@ class LandingPageSeeder extends Seeder
             ]);
         }
 
-        // 2. Buat Kategori Dummy
-        $categoryNames = [
-            'Teknologi', 'Kesehatan', 'Pendidikan',
-            'Agrikultur', 'Energi Terbarukan', 'F&B', 'Kreatif'
-        ];
-        $categories = [];
-        foreach ($categoryNames as $name) {
-            $categories[] = Category::create([
-                'title' => $name,
-            ]);
-        }
+        // 2. Kategori kanonik ditanam oleh CategorySeeder — ambil yang sudah ada
+        //    (project categories = post_id null), jangan tanam daftar sendiri.
+        $categories = Category::whereNull('post_id')->get()->all();
 
         // 3. Buat 15 Project Dummy untuk variasi data
         foreach (range(1, 15) as $index) {

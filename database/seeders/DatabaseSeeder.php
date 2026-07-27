@@ -14,8 +14,10 @@ class DatabaseSeeder extends Seeder
         // Hapus atau comment kode User::factory() bawaan Laravel
         // \App\Models\User::factory(10)->create();
 
-        // Panggil seeder yang sudah kita buat
+        // Panggil seeder yang sudah kita buat.
+        // CategorySeeder WAJIB pertama: 12 kategori kanonik yang di-share seeder lain.
         $this->call([
+            CategorySeeder::class,
             CategoryAndProjectSeeder::class,
             LandingPageSeeder::class,
             EndpointTestSeeder::class,

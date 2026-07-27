@@ -25,18 +25,11 @@ class CategoryAndProjectSeeder extends Seeder
             ]);
         }
 
-        // 2. Buat Kategori
-        $categories = ['Teknologi', 'Fintech', 'Sosial', 'Lingkungan'];
-        foreach ($categories as $cat) {
-            // Gunakan updateOrInsert agar tidak duplicate jika seeder dijalankan berulang
-            DB::table('categories')->updateOrInsert(
-                ['title' => $cat],
-                ['title' => $cat]
-            );
-        }
+        // 2. Kategori sudah ditanam oleh CategorySeeder (12 kategori kanonik).
+        //    Seeder ini tidak lagi menanam daftarnya sendiri — cukup pakai yang ada.
 
-        // 3. Ambil ID kategori dan user
-        $categoryIds = DB::table('categories')->pluck('id')->toArray();
+        // 3. Ambil ID kategori (project categories = post_id null) dan user
+        $categoryIds = DB::table('categories')->whereNull('post_id')->pluck('id')->toArray();
         $userIds = DB::table('users')->pluck('id')->toArray();
 
         // 4. Buat Proyek (sesuaikan dengan migration projects)

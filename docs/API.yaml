@@ -20,6 +20,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/LandingPageResponse'
 
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: Mendapatkan semua kategori project
+      description: >
+        Daftar semua kategori project ({id, title}), diurutkan alfabetis by title.
+        Dipakai frontend untuk dropdown/checkbox saat membuat project. Publik
+        (tanpa auth), tidak berpaginasi, dan di-cache (TTL 3600 dtk) karena data
+        nyaris statis.
+      responses:
+        '200':
+          description: Daftar kategori berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriesResponse'
+
   /projects:
     get:
       summary: Mendapatkan daftar proyek (berpaginasi)
@@ -745,6 +763,20 @@ components:
         title:
           type: string
 
+    CategoriesResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Categories retrieved successfully
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+
     CategoryProjects:
       allOf:
         - $ref: '#/components/schemas/Category'
@@ -951,7 +983,8 @@ components:
         category_ids:
           type: array
           nullable: true
-          description: Opsional. Daftar ID kategori yang di-attach (harus exists di tabel categories).
+          maxItems: 5
+          description: Opsional. Daftar ID kategori yang di-attach (harus exists di tabel categories). Maksimal 5 kategori per project.
           items:
             type: integer
           example: [1, 2]

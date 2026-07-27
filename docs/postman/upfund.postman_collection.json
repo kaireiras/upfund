@@ -58,6 +58,18 @@
       ]
     },
     {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/categories", "host": ["{{base_url}}"], "path": ["categories"] }
+          }
+        }
+      ]
+    },
+    {
       "name": "Projects",
       "item": [
         {

@@ -56,6 +56,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Projects
+      summary: Membuat proyek baru
+      description: >
+        Membuat proyek baru beserta relasinya (cover image, categories,
+        shareholders, milestones) secara atomik. User yang login menjadi owner
+        proyek. Aturan bisnis divalidasi di backend: total `owned_equity_percent`
+        seluruh shareholder tidak boleh melebihi 100, dan total
+        `release_budget_percent` seluruh milestone HARUS tepat 100.
+        Setelah sukses, cache daftar proyek & landing page di-invalidate.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/store_project_body'
+      responses:
+        '201':
+          description: Proyek berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreProjectResponse'
+        '401':
+          description: Unauthenticated (token tidak ada / tidak valid)
+        '422':
+          description: >
+            Validasi gagal (mis. field wajib kosong, total equity > 100,
+            atau total budget milestone != 100).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
 
   /projects/{id}:
     get:
@@ -708,6 +744,168 @@ components:
           description: Detail teknis error (sebaiknya disembunyikan di production).
 
     # ----------------------------------------------------------------------
+    # Schema khusus POST /projects (create).
+    #
+    # Penamaan field request mengikuti mockup FE (video_pitch_url,
+    # cover_image_url, company_valuation, owned_equity_percent,
+    # release_budget_percent, start_date/end_date) — pemetaan ke kolom DB
+    # dilakukan di layer Service. Response 201 memakai ProjectDetail (reuse
+    # schema GET /projects/{id}).
+    # ----------------------------------------------------------------------
+
+    store_project_body:
+      type: object
+      required:
+        - title
+        - description
+        - video_pitch_url
+        - cover_image_url
+        - company_valuation
+        - funding_target
+        - categories
+        - shareholders
+        - milestones
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          example: EcoCharge Solar Pods
+        description:
+          type: string
+          example: Portable solar charging pods for off-grid communities.
+        video_pitch_url:
+          type: string
+          format: uri
+          maxLength: 1024
+          example: https://youtube.com/watch?v=ecocharge
+        cover_image_url:
+          type: string
+          format: uri
+          maxLength: 1024
+          description: URL cover image; disimpan sebagai satu baris project_images (baris pertama = cover).
+          example: https://cdn.upfund.test/ecocharge/cover.jpg
+        company_valuation:
+          type: integer
+          minimum: 0
+          description: Nilai perusahaan (dipetakan ke kolom valuation).
+          example: 5000000
+        funding_target:
+          type: integer
+          minimum: 0
+          description: Target dana yang ingin dihimpun.
+          example: 750000
+        categories:
+          type: array
+          minItems: 1
+          description: Daftar ID kategori (harus exists di tabel categories, unik).
+          items:
+            type: integer
+          example: [1, 2]
+        shareholders:
+          type: array
+          minItems: 1
+          description: >
+            Daftar shareholder. VALIDASI: total owned_equity_percent seluruh
+            item tidak boleh melebihi 100. Sisa (100 - total) adalah public
+            share release (derived, tidak disimpan sebagai baris).
+          items:
+            $ref: '#/components/schemas/store_project_shareholder'
+        milestones:
+          type: array
+          minItems: 1
+          description: >
+            Daftar milestone. VALIDASI: total release_budget_percent seluruh
+            item HARUS tepat 100 (tidak boleh kurang/lebih).
+          items:
+            $ref: '#/components/schemas/store_project_milestone'
+
+    store_project_shareholder:
+      type: object
+      required:
+        - name
+        - owned_equity_percent
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: Alice Founder
+        owned_equity_percent:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Persentase equity (numeric, maksimal 2 desimal; dipetakan ke kolom share decimal(5,2)).
+          example: 60
+
+    store_project_milestone:
+      type: object
+      required:
+        - title
+        - description
+        - start_date
+        - end_date
+        - release_budget_percent
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          example: Prototype
+        description:
+          type: string
+          description: Target objectives milestone (dipetakan ke kolom description).
+          example: Build working prototype
+        start_date:
+          type: string
+          format: date
+          description: Dipetakan ke kolom from.
+          example: 2026-08-01
+        end_date:
+          type: string
+          format: date
+          description: Harus setelah start_date. Dipetakan ke kolom to.
+          example: 2026-09-01
+        release_budget_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Persentase budget (integer; dipetakan ke kolom budget). Total semua milestone harus = 100.
+          example: 40
+
+    StoreProjectResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Project created successfully
+        data:
+          $ref: '#/components/schemas/ProjectDetail'
+
+    ValidationErrorResponse:
+      type: object
+      description: Bentuk error validasi seragam (envelope status=error + map errors per field).
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: The given data was invalid.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            milestones:
+              - "Total milestones (release_budget_percent) harus tepat 100 (saat ini 90)."
+            shareholders:
+              - "Total shareholders (owned_equity_percent) tidak boleh melebihi 100 (saat ini 110)."
+
+    # ----------------------------------------------------------------------
     # Schema khusus Project Detail (GET /projects/{id}) beserta sub-resource,
     # serta daftar comments & posts (berpaginasi).
     #
@@ -746,6 +944,9 @@ components:
           nullable: true
         valuation:
           type: integer
+        funding_target:
+          type: integer
+          description: Target dana yang ingin dihimpun. Berbeda dari valuation (nilai perusahaan) & collected_funds (dana terkumpul, 0 saat create).
         collected_funds:
           type: integer
         investment_url:
@@ -831,7 +1032,9 @@ components:
         name:
           type: string
         share:
-          type: integer
+          type: string
+          description: Persentase kepemilikan (kolom decimal(5,2), dikembalikan sebagai string 2 desimal).
+          example: "60.00"
 
     PublicEvent:
       type: object

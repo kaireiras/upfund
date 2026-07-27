@@ -104,6 +104,90 @@
               "query": [{ "key": "page", "value": "1" }]
             }
           }
+        },
+        {
+          "name": "Create Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.test('envelope success', () => pm.expect(res.status).to.eql('success'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/projects", "host": ["{{base_url}}"], "path": ["projects"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"EcoCharge Solar Pods\",\n  \"description\": \"Portable solar charging pods for off-grid communities.\",\n  \"video_pitch_url\": \"https://youtube.com/watch?v=ecocharge\",\n  \"cover_image_url\": \"https://cdn.upfund.test/ecocharge/cover.jpg\",\n  \"company_valuation\": 5000000,\n  \"funding_target\": 750000,\n  \"categories\": [1, 2],\n  \"shareholders\": [\n    { \"name\": \"Alice Founder\", \"owned_equity_percent\": 60 },\n    { \"name\": \"Bob Cofounder\", \"owned_equity_percent\": 25.5 }\n  ],\n  \"milestones\": [\n    { \"title\": \"Prototype\", \"description\": \"Build working prototype\", \"start_date\": \"2026-08-01\", \"end_date\": \"2026-09-01\", \"release_budget_percent\": 40 },\n    { \"title\": \"Pilot\", \"description\": \"Field pilot in 3 villages\", \"start_date\": \"2026-09-02\", \"end_date\": \"2026-11-01\", \"release_budget_percent\": 35 },\n    { \"title\": \"Scale\", \"description\": \"Manufacturing scale-up\", \"start_date\": \"2026-11-02\", \"end_date\": \"2027-02-01\", \"release_budget_percent\": 25 }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Project - Invalid (shareholder equity > 100%)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "const res = pm.response.json();",
+                  "pm.test('shareholders error present', () => pm.expect(res.errors).to.have.property('shareholders'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/projects", "host": ["{{base_url}}"], "path": ["projects"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bad Equity Co\",\n  \"description\": \"Shareholders sum to 110 percent, must be rejected.\",\n  \"video_pitch_url\": \"https://youtube.com/watch?v=badequity\",\n  \"cover_image_url\": \"https://cdn.upfund.test/badequity/cover.jpg\",\n  \"company_valuation\": 1000000,\n  \"funding_target\": 200000,\n  \"categories\": [1],\n  \"shareholders\": [\n    { \"name\": \"Greedy A\", \"owned_equity_percent\": 60 },\n    { \"name\": \"Greedy B\", \"owned_equity_percent\": 50 }\n  ],\n  \"milestones\": [\n    { \"title\": \"M1\", \"description\": \"obj\", \"start_date\": \"2026-08-01\", \"end_date\": \"2026-09-01\", \"release_budget_percent\": 100 }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Project - Invalid (milestone budget != 100%)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "const res = pm.response.json();",
+                  "pm.test('milestones error present', () => pm.expect(res.errors).to.have.property('milestones'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/projects", "host": ["{{base_url}}"], "path": ["projects"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bad Milestone Co\",\n  \"description\": \"Milestone budgets sum to 90 percent, must be rejected.\",\n  \"video_pitch_url\": \"https://youtube.com/watch?v=badmilestone\",\n  \"cover_image_url\": \"https://cdn.upfund.test/badmilestone/cover.jpg\",\n  \"company_valuation\": 1000000,\n  \"funding_target\": 200000,\n  \"categories\": [1],\n  \"shareholders\": [\n    { \"name\": \"Fair A\", \"owned_equity_percent\": 50 }\n  ],\n  \"milestones\": [\n    { \"title\": \"M1\", \"description\": \"obj1\", \"start_date\": \"2026-08-01\", \"end_date\": \"2026-09-01\", \"release_budget_percent\": 40 },\n    { \"title\": \"M2\", \"description\": \"obj2\", \"start_date\": \"2026-09-02\", \"end_date\": \"2026-10-01\", \"release_budget_percent\": 50 }\n  ]\n}"
+            }
+          }
         }
       ]
     },

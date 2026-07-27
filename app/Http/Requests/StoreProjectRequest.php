@@ -19,10 +19,18 @@ class StoreProjectRequest extends FormRequest
             'valuation'      => ['required', 'numeric', 'min:0'],
             'investment_url' => ['nullable', 'url'],
             'date'           => ['nullable', 'date'],
-            
-            // Opsional jika membawa relasi array saat pembuatan
-            'category_ids'   => ['nullable', 'array'],
+
+            // Opsional jika membawa relasi array saat pembuatan.
+            // Batas maksimal 5 kategori per project (tetap nullable — kategori opsional).
+            'category_ids'   => ['nullable', 'array', 'max:5'],
             'category_ids.*' => ['exists:categories,id'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'category_ids.max' => 'Maksimal 5 kategori per project.',
         ];
     }
 }

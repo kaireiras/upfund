@@ -85,12 +85,10 @@ class EndpointTestSeeder extends Seeder
 
         // ----------------------------------------------------------------
         // 3. PROJECT CATEGORIES (untuk filter GET /projects?category=...)
+        //    Kategori kanonik ditanam oleh CategorySeeder — ambil yang sudah ada
+        //    (project categories = post_id null), jangan tanam daftar sendiri.
         // ----------------------------------------------------------------
-        $categoryNames = ['Teknologi', 'Kesehatan', 'Pendidikan', 'Agrikultur', 'Energi Terbarukan'];
-        $categories = [];
-        foreach ($categoryNames as $name) {
-            $categories[] = Category::firstOrCreate(['title' => $name]);
-        }
+        $categories = Category::whereNull('post_id')->get()->all();
 
         // ----------------------------------------------------------------
         // 4. PROJECTS — untuk GET /projects, GET /projects/{id}, landing-page

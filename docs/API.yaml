@@ -56,6 +56,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Projects
+      summary: Membuat proyek baru
+      description: >
+        Membuat proyek baru. Owner otomatis diisi dari user yang login (Sanctum),
+        dan collected_funds di-set 0. Kategori opsional dapat di-attach lewat
+        category_ids. Mengembalikan project via ProjectResource.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/store_project_body'
+      responses:
+        '201':
+          description: Proyek berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreProjectResponse'
+        '401':
+          description: Unauthenticated (token tidak ada / tidak valid)
+        '422':
+          description: Validasi gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
 
   /projects/{id}:
     get:
@@ -169,6 +200,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /projects/{id}/investors:
+    get:
+      tags:
+        - Projects
+      summary: Mendapatkan daftar investor sebuah proyek (berpaginasi)
+      description: >
+        Mengambil daftar investor (riwayat investasi) pada satu proyek,
+        berpaginasi (15 item per halaman, paginator default Laravel), diurutkan
+        dari yang terbaru. Tiap item menyertakan user investor & ringkasan
+        transaksinya.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID proyek.
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: false
+          description: Nomor halaman (mulai dari 1). Default 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Daftar investor berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentHistoriesResponse'
 
   /login:
     post:
@@ -465,6 +529,114 @@ paths:
         '422':
           description: Validasi gagal
 
+  /transactions:
+    post:
+      tags:
+        - Transactions
+      summary: Membuat transaksi investasi & mendapatkan Snap Token (Midtrans)
+      description: >
+        Membuat transaksi investasi pada sebuah proyek. Server menghitung
+        platform fee 10% di atas nilai investasi, membuat baris transaksi
+        berstatus `pending`, lalu meminta Snap Token ke Midtrans. Frontend
+        memakai snap_token untuk membuka popup pembayaran Midtrans.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/transactions_body'
+      responses:
+        '201':
+          description: Transaksi dibuat & Snap Token berhasil digenerate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionCreateResponse'
+        '401':
+          description: Unauthenticated
+        '422':
+          description: Validasi gagal (project_id tidak valid / amount < 10000)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Gagal generate Snap Token dari Midtrans
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /midtrans/notification:
+    post:
+      tags:
+        - Transactions
+      summary: Webhook notifikasi pembayaran dari Midtrans
+      description: >
+        Endpoint callback yang dipanggil server Midtrans saat status pembayaran
+        berubah (settlement/capture/pending/deny/expire/cancel). Publik (tanpa
+        auth) karena dipanggil server-to-server oleh Midtrans. Saat pembayaran
+        lunas, status transaksi menjadi `paid`, `collected_funds` proyek
+        ditambah, dan baris InvestmentHistory dibuat. Payload di bawah adalah
+        fallback bila SDK Midtrans tidak terinisialisasi (mis. saat tes manual).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/midtrans_notification_body'
+      responses:
+        '200':
+          description: Notifikasi berhasil diproses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleStatusResponse'
+        '400':
+          description: Payload tidak valid (order_id tidak ada)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Gagal memproses notifikasi (mis. order_id tidak ditemukan)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /user/investment-histories:
+    get:
+      tags:
+        - Transactions
+      summary: Mendapatkan riwayat investasi user yang sedang login (berpaginasi)
+      description: >
+        Mengambil daftar investasi milik user yang sedang login, berpaginasi
+        (10 item per halaman, paginator default Laravel), diurutkan dari yang
+        terbaru. Tiap item menyertakan proyek terkait & ringkasan transaksinya.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Nomor halaman (mulai dari 1). Default 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Riwayat investasi berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentHistoriesResponse'
+        '401':
+          description: Unauthenticated
+
 components:
   schemas:
     LandingPageResponse:
@@ -706,6 +878,247 @@ components:
         error:
           type: string
           description: Detail teknis error (sebaiknya disembunyikan di production).
+
+    SimpleStatusResponse:
+      type: object
+      description: Envelope respons ringkas (hanya status + message).
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Notification processed
+
+    ValidationErrorResponse:
+      type: object
+      description: Bentuk error validasi bawaan Laravel (map field -> array pesan).
+      properties:
+        message:
+          type: string
+          example: The given data was invalid.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            amount:
+              - The amount field must be at least 10000.
+
+    # ----------------------------------------------------------------------
+    # Schema untuk POST /projects (create).
+    #
+    # Response 201 memakai ProjectResource (schema ProjectListItem) — sama
+    # dengan item pada GET /projects. category_ids opsional; bila diisi,
+    # kategori di-attach via pivot.
+    # ----------------------------------------------------------------------
+
+    store_project_body:
+      type: object
+      required:
+        - title
+        - description
+        - valuation
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          example: EcoCharge Solar Pods
+        description:
+          type: string
+          example: Portable solar charging pods for off-grid communities.
+        video_url:
+          type: string
+          format: uri
+          nullable: true
+          example: https://youtube.com/watch?v=ecocharge
+        valuation:
+          type: number
+          minimum: 0
+          example: 5000000
+        investment_url:
+          type: string
+          format: uri
+          nullable: true
+          example: https://upfund.test/invest/ecocharge
+        date:
+          type: string
+          format: date
+          nullable: true
+          description: Opsional; default now() bila tidak dikirim.
+        category_ids:
+          type: array
+          nullable: true
+          description: Opsional. Daftar ID kategori yang di-attach (harus exists di tabel categories).
+          items:
+            type: integer
+          example: [1, 2]
+
+    StoreProjectResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Project created successfully
+        data:
+          $ref: '#/components/schemas/ProjectListItem'
+
+    # ----------------------------------------------------------------------
+    # Schema untuk Transactions & Investment Histories (Midtrans).
+    # ----------------------------------------------------------------------
+
+    transactions_body:
+      type: object
+      required:
+        - project_id
+        - amount
+      properties:
+        project_id:
+          type: integer
+          description: ID proyek yang diinvestasikan (harus exists).
+          example: 1
+        amount:
+          type: integer
+          minimum: 10000
+          description: Nilai investasi murni (belum termasuk platform fee 10%).
+          example: 20000000
+
+    TransactionBreakdown:
+      type: object
+      properties:
+        investment_amount:
+          type: integer
+          example: 20000000
+        platform_fee:
+          type: integer
+          description: 10% dari investment_amount.
+          example: 2000000
+        grand_total:
+          type: integer
+          description: Total yang dibayarkan ke Midtrans (investment_amount + platform_fee).
+          example: 22000000
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        order_id:
+          type: string
+          example: TRX-1753600000-123
+        user_id:
+          type: integer
+        project_id:
+          type: integer
+        amount:
+          type: integer
+          example: 20000000
+        status:
+          type: string
+          enum: [pending, processing, paid, failed]
+          example: pending
+        payment_type:
+          type: string
+          nullable: true
+        snap_token:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date-time
+
+    TransactionCreateResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Payment generated successfully
+        snap_token:
+          type: string
+          example: 66e4fa55-fdac-4ef9-91b5-733b97d1b862
+        breakdown:
+          $ref: '#/components/schemas/TransactionBreakdown'
+        data:
+          $ref: '#/components/schemas/Transaction'
+
+    midtrans_notification_body:
+      type: object
+      description: >
+        Payload notifikasi Midtrans (fallback bila SDK tidak terinisialisasi).
+        Pada produksi, dikirim oleh server Midtrans.
+      required:
+        - order_id
+        - transaction_status
+      properties:
+        order_id:
+          type: string
+          example: TRX-1753600000-123
+        transaction_status:
+          type: string
+          enum: [capture, settlement, pending, deny, expire, cancel]
+          example: settlement
+        payment_type:
+          type: string
+          example: bank_transfer
+        fraud_status:
+          type: string
+          nullable: true
+          example: accept
+
+    InvestmentHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+        user:
+          allOf:
+            - $ref: '#/components/schemas/User'
+          nullable: true
+          description: Hanya disertakan saat relasi user di-eager-load (mis. endpoint investors proyek).
+        project:
+          allOf:
+            - $ref: '#/components/schemas/ProjectListItem'
+          nullable: true
+          description: Hanya disertakan saat relasi project di-eager-load (mis. endpoint riwayat user).
+        transaction:
+          type: object
+          properties:
+            id:
+              type: integer
+            order_id:
+              type: string
+            amount:
+              type: integer
+            payment_type:
+              type: string
+              nullable: true
+            status:
+              type: string
+            date:
+              type: string
+              format: date-time
+
+    InvestmentHistoriesResponse:
+      type: object
+      description: >
+        Koleksi berpaginasi (paginator default Laravel — wrapper data + links + meta).
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvestmentHistory'
+        links:
+          $ref: '#/components/schemas/LaravelPaginationLinks'
+        meta:
+          $ref: '#/components/schemas/LaravelPaginationMeta'
 
     # ----------------------------------------------------------------------
     # Schema khusus Project Detail (GET /projects/{id}) beserta sub-resource,

@@ -10,6 +10,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserProfileController;
+use App\Http\Controllers\ProjectController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +34,7 @@ Route::get('/comments', [CommentController::class, 'index']);
 Route::get('/posts', [PostController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/projects', [ProjectController::class, 'store']);
     Route::post('/interactions/like', [PostController::class, 'toggleLike']);
     Route::post('/comments', [CommentController::class, 'store']);
     Route::delete('/comments/{id}', [CommentController::class, 'destroy']);

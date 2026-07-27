@@ -16,6 +16,7 @@ class ProjectDetailResource extends JsonResource
             'date'            => $this->date?->toISOString(),
             'video_url'       => $this->video_url,
             'valuation'       => $this->valuation,
+            'funding_target'  => $this->funding_target,
             'collected_funds' => $this->collected_funds,
             'investment_url'  => $this->investment_url,
 

@@ -2,47 +2,32 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreProjectRequest;
+use App\Http\Resources\ProjectDetailResource;
+use App\Services\ProjectService;
+use Illuminate\Http\JsonResponse;
 
 class ProjectController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
+    public function __construct(
+        private ProjectService $projectService,
+    ) {}
 
     /**
-     * Store a newly created resource in storage.
+     * Buat project baru.
+     * POST /api/projects  (auth:sanctum)
      */
-    public function store(Request $request)
+    public function store(StoreProjectRequest $request): JsonResponse
     {
-        //
-    }
+        $project = $this->projectService->create(
+            $request->validated(),
+            $request->user()->id,
+        );
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Project created successfully',
+            'data'    => new ProjectDetailResource($project),
+        ], 201);
     }
 }

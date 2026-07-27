@@ -13,6 +13,7 @@ use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\InvestmentHistoryController;
+use App\Http\Controllers\CategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +23,7 @@ use App\Http\Controllers\InvestmentHistoryController;
 
 // Endpoint untuk Landing Page (BFF Pattern)
 Route::get('/landing-page', LandingPageController::class);
+Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/projects', [ProjectCategoriesController::class, 'index']);
 Route::get('/projects/{id}', [ProjectDetailController::class, 'show']);
 Route::get('/projects/{id}/comments', [ProjectDetailController::class, 'comments']);

@@ -57,36 +57,54 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      tags:
-        - Projects
-      summary: Membuat proyek baru
+          summary: Membuat proyek baru
+          description: >
+            Membuat proyek baru beserta cover image, kategori, shareholders, dan
+            milestones sekaligus secara atomik. Total owned_equity_percent seluruh
+            shareholder tidak boleh melebihi 100%. Total release_budget_percent
+            seluruh milestone harus tepat 100%. Memerlukan autentikasi.
+          security:
+            - sanctumAuth: []
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CreateProjectRequest'
+          responses:
+            '201':
+              description: Proyek berhasil dibuat
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ProjectDetailResponse'
+            '401':
+              description: Tidak terautentikasi
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ErrorResponse'
+            '422':
+              description: Data tidak valid (mis. total shareholder >100%, total milestone bukan 100%, kategori >5)
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /categories:
+    get:
+      summary: Mendapatkan daftar seluruh kategori proyek
       description: >
-        Membuat proyek baru. Owner otomatis diisi dari user yang login (Sanctum),
-        dan collected_funds di-set 0. Kategori opsional dapat di-attach lewat
-        category_ids. Mengembalikan project via ProjectResource.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/store_project_body'
+        Mengambil semua kategori yang tersedia untuk proyek (bukan kategori
+        post), diurutkan alfabetis. Digunakan untuk mengisi pilihan kategori
+        saat membuat proyek. Tidak memerlukan autentikasi.
       responses:
-        '201':
-          description: Proyek berhasil dibuat
+        '200':
+          description: Daftar kategori berhasil diambil
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StoreProjectResponse'
-        '401':
-          description: Unauthenticated (token tidak ada / tidak valid)
-        '422':
-          description: Validasi gagal
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: '#/components/schemas/CategoriesResponse'
 
   /projects/{id}:
     get:
@@ -728,14 +746,123 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProjectImage'
+    CreateProjectRequest:
+      type: object
+      required:
+        - title
+        - description
+        - video_pitch_url
+        - cover_image_url
+        - company_valuation
+        - funding_target
+        - categories
+        - shareholders
+        - milestones
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          example: "Aplikasi Pertanian Pintar"
+        description:
+          type: string
+          example: "Platform yang membantu petani memonitor lahan secara digital."
+        video_pitch_url:
+          type: string
+          format: uri
+          maxLength: 1024
+        cover_image_url:
+          type: string
+          format: uri
+          maxLength: 1024
+        company_valuation:
+          type: integer
+          minimum: 0
+          example: 5000000000
+        funding_target:
+          type: integer
+          minimum: 0
+          example: 750000000
+        categories:
+          type: array
+          minItems: 1
+          maxItems: 5
+          description: Daftar ID kategori (maksimal 5, harus ada di GET /categories).
+          items:
+            type: integer
+          example: [1, 3, 5]
+        shareholders:
+          type: array
+          minItems: 1
+          description: Total owned_equity_percent seluruh item tidak boleh melebihi 100.
+          items:
+            $ref: '#/components/schemas/ShareholderInput'
+        milestones:
+          type: array
+          minItems: 1
+          description: Total release_budget_percent seluruh item harus tepat 100.
+          items:
+            $ref: '#/components/schemas/MilestoneInput'
 
-    HotProject:
-      allOf:
-        - $ref: '#/components/schemas/Project'
-        - type: object
-          properties:
-            comments_count:
-              type: integer
+    ShareholderInput:
+      type: object
+      required:
+        - name
+        - owned_equity_percent
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: "Helena Vance (Founder)"
+        owned_equity_percent:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Persentase kepemilikan, maksimal 2 desimal.
+          example: 12.5
+
+    MilestoneInput:
+      type: object
+      required:
+        - title
+        - description
+        - start_date
+        - end_date
+        - release_budget_percent
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          example: "Prototype development"
+        description:
+          type: string
+          example: "Build version 1 model and test core functionalities."
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          description: Harus setelah start_date.
+        release_budget_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 50
+
+    CategoriesResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Categories retrieved successfully
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
 
     Category:
       type: object
@@ -744,6 +871,34 @@ components:
           type: integer
         title:
           type: string
+          example: "Teknologi"
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: The given data was invalid.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            shareholders: ["Total shareholders owned_equity_percent tidak boleh melebihi 100 (saat ini 110)."]
+            "categories": ["Maksimal 5 kategori per project."]
+
+    HotProject:
+      allOf:
+        - $ref: '#/components/schemas/Project'
+        - type: object
+          properties:
+            comments_count:
+              type: integer
 
     CategoryProjects:
       allOf:

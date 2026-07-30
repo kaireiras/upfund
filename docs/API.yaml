@@ -873,25 +873,6 @@ components:
           type: string
           example: "Teknologi"
 
-    ValidationErrorResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          example: error
-        message:
-          type: string
-          example: The given data was invalid.
-        errors:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: string
-          example:
-            shareholders: ["Total shareholders owned_equity_percent tidak boleh melebihi 100 (saat ini 110)."]
-            "categories": ["Maksimal 5 kategori per project."]
-
     HotProject:
       allOf:
         - $ref: '#/components/schemas/Project'
@@ -1046,21 +1027,25 @@ components:
           example: Notification processed
 
     ValidationErrorResponse:
-      type: object
-      description: Bentuk error validasi bawaan Laravel (map field -> array pesan).
-      properties:
-        message:
-          type: string
-          example: The given data was invalid.
-        errors:
           type: object
-          additionalProperties:
-            type: array
-            items:
+          description: Bentuk error validasi (map field -> array pesan), dibungkus envelope standar.
+          properties:
+            status:
               type: string
-          example:
-            amount:
-              - The amount field must be at least 10000.
+              example: error
+            message:
+              type: string
+              example: The given data was invalid.
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              example:
+                shareholders: ["Total shareholders owned_equity_percent tidak boleh melebihi 100 (saat ini 110)."]
+                categories: ["Maksimal 5 kategori per project."]
+                amount: ["The amount field must be at least 10000."]
 
     # ----------------------------------------------------------------------
     # Schema untuk POST /projects (create).

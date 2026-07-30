@@ -16,6 +16,11 @@ class ProjectCategoriesService
             // Cache key unik per kombinasi kategori + halaman
             $cacheKey = "projects_category_" . ($categorySlug ?? 'all') . "_page_{$page}";
 
+            // Daftarkan key ke registry agar bisa di-invalidate saat data project
+            // berubah (key dinamis, driver `database` tak dukung tags). Lihat
+            // ProjectCacheManager & konvensi key-registry di CLAUDE.md.
+            app(ProjectCacheManager::class)->register($cacheKey);
+
             // Cache HASIL AKHIR (array), bukan objek paginator — objek paginator
             // gagal di-unserialize lintas-proses ("incomplete object").
             return Cache::remember($cacheKey, 600, function () use ($categorySlug, $perPage, $page) {

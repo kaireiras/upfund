@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # Service Laravel (App)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: upfund-api
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - laravel-network
+
+  # Service Webserver (Nginx)
+  webserver:
+    image: nginx:alpine
+    container_name: laravel_webserver
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80" # Di-proxy oleh Caddy VPS
+    volumes:
+      - .:/var/www
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - laravel-network
+
+  # Service Database (PostgreSQL)
+  db:
+    image: postgres:16-alpine
+    container_name: upfund-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: newupfund
+      POSTGRES_USER: rakai
+      POSTGRES_PASSWORD: passwordku
+    ports:
+      - "127.0.0.1:5432:5432" # Disarankan bind ke 127.0.0.1 agar DB tidak terbuka bebas ke internet publik
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rakai -d newupfund"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - laravel-network
+
+networks:
+  laravel-network:
+    driver: bridge
+
+volumes:
+  pgdata: # Disamakan dengan volume service db
+    driver: local
